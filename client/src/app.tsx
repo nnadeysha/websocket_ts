@@ -1,82 +1,66 @@
 import React, { FC, useEffect, useState } from 'react';
-
+import { IGameStatus, IServerRequestMessage, IServerResponseMessage, IUser } from "./socketInterface";
+import { SocketModel } from "./socket";
+import { AuthsView } from "./auth";
+import { GameField } from './cardGame/cardField';
 export const App = () => <SocketApp />;
 
-interface IServerResponseMessage {
-  type: string;
-  content: string;
-}
-
-interface IServerRequestMessage {
-  type: string;
-  content: string;
-}
-
 export const SocketApp = () => {
-  const [websocket, setWebsocket] = useState<WebSocket>(null);
+  const [websocket, setWebsocket] = useState<SocketModel>(null);
   const [messages, setMessages] = useState<Array<IMessage>>([]);
   const [users, setUsers] = useState<Array<IUser>>([]);
+  const [currentUser, setCurrentUser] = useState<IUser>(null);
+  const [gameStatus, setGameStatus] = useState<IGameStatus>(null);
 
   useEffect(() => {
-    const _websocket = new window.WebSocket('ws://localhost:3000/');
-
-    _websocket.onopen = () => {
-      // setUsers();
-
-      const request: IServerRequestMessage = {
-        type: 'userList',
-        content: '',
-      };
-
-      _websocket.send(JSON.stringify(request));
-      setWebsocket(_websocket);
+    const _websocket = new SocketModel();
+    _websocket.onMessage = (text) => {
+      setMessages((prev) => {
+        return [...prev, { text: text }];
+      });
     };
-
-    _websocket.onmessage = (ev) => {
-      const response: IServerResponseMessage = JSON.parse(ev.data);
-
-      if (response.type === 'message') {
-        setMessages((prev) => {
-          return [...prev, { text: response.content }];
-        });
-      }
-
-      if (response.type === 'userList') {
-        console.log(response);
-        const users: Array<IUser> = JSON.parse(response.content);
-
-        setUsers(users);
-      }
+    _websocket.onUserList = (users) => {
+      setUsers(users);
     };
-
-    _websocket.onerror = () => {};
-    _websocket.onclose = () => {};
-
-    return () => {
-      _websocket.onclose = null;
-      _websocket.close();
-    };
+    _websocket.onAuth = (user) => {
+      setCurrentUser(user);
+    }
+    _websocket.onGameStatus = (gameStatus) => {
+      setGameStatus(gameStatus);
+    }
+    setWebsocket(_websocket);
+    return () => {_websocket.destroy()};
   }, []);
 
   function handlClick() {
-    const request: IServerRequestMessage = {
-      type: 'message',
-      content: 'Done',
-    };
-
-    websocket.send(JSON.stringify(request));
+    websocket.sendMessage('Done');
   }
 
   return (
     <div>
-      <button onClick={handlClick}>Send</button>
-      <UserList users={users} />
-      <div className="messages">
-        {messages.map((message) => (
-          <MessageView {...message} />
-        ))}
-      </div>
-      <input className="input" />
+      {
+        !currentUser && 
+        <AuthsView onUserAuth={(user) => {
+          websocket.auth(user);
+        }}/>
+      }
+      {currentUser && <>
+        <button onClick={handlClick}>Send</button>
+        <UserList users={users} />
+        <div className="messages">
+          {messages.map((message) => (
+            <MessageView {...message} />
+          ))}
+        </div>
+        <input className="input" />
+        <button onClick={() => websocket.join()}>join</button>
+        {
+          gameStatus &&
+          <GameField data={ gameStatus } onAction={(card) => {
+            websocket.attack(card);
+          }}/>
+        }
+      </>}
     </div>
   );
 };
@@ -94,10 +78,6 @@ export const UserList: FC<{ users: Array<IUser> }> = ({ users }) => {
     </>
   );
 };
-
-interface IUser {
-  userName: string;
-}
 
 export const UserView: FC<IUser> = ({ userName }) => {
   return <div className="user">{userName}</div>;
