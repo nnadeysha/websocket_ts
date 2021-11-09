@@ -1,9 +1,12 @@
 import React, { FC, useEffect, useState } from 'react';
-import { IGameStatus, IServerRequestMessage, IServerResponseMessage, IUser } from "./socketInterface";
-import { SocketModel } from "./socket";
-import { AuthsView } from "./auth";
+import { IGameStatus, IUser } from './socketInterface';
+import { SocketModel } from './socket';
+import { AuthsView } from './auth';
 import { GameField } from './cardGame/cardField';
 export const App = () => <SocketApp />;
+
+// TODO: save auth
+// TODO: layout
 
 export const SocketApp = () => {
   const [websocket, setWebsocket] = useState<SocketModel>(null);
@@ -11,6 +14,7 @@ export const SocketApp = () => {
   const [users, setUsers] = useState<Array<IUser>>([]);
   const [currentUser, setCurrentUser] = useState<IUser>(null);
   const [gameStatus, setGameStatus] = useState<IGameStatus>(null);
+  const [isStarted, setIsStarted] = useState<boolean>(false);
 
   useEffect(() => {
     const _websocket = new SocketModel();
@@ -24,12 +28,21 @@ export const SocketApp = () => {
     };
     _websocket.onAuth = (user) => {
       setCurrentUser(user);
-    }
+    };
+    _websocket.onJoin = () => {
+      setIsStarted(true);
+    };
     _websocket.onGameStatus = (gameStatus) => {
       setGameStatus(gameStatus);
-    }
+    };
+    _websocket.onFinish = () => {
+      setIsStarted(false);
+      console.log('finish');
+    };
     setWebsocket(_websocket);
-    return () => {_websocket.destroy()};
+    return () => {
+      _websocket.destroy();
+    };
   }, []);
 
   function handlClick() {
@@ -38,29 +51,47 @@ export const SocketApp = () => {
 
   return (
     <div>
-      {
-        !currentUser && 
-        <AuthsView onUserAuth={(user) => {
-          websocket.auth(user);
-        }}/>
-      }
-      {currentUser && <>
-        <button onClick={handlClick}>Send</button>
-        <UserList users={users} />
-        <div className="messages">
-          {messages.map((message) => (
-            <MessageView {...message} />
-          ))}
-        </div>
-        <input className="input" />
-        <button onClick={() => websocket.join()}>join</button>
-        {
-          gameStatus &&
-          <GameField data={ gameStatus } onAction={(card) => {
-            websocket.attack(card);
-          }}/>
-        }
-      </>}
+      {!currentUser && (
+        <AuthsView
+          onUserAuth={(user) => {
+            websocket.auth(user);
+          }}
+        />
+      )}
+      {currentUser && (
+        <>
+          <button onClick={handlClick}>Send</button>
+          <UserList users={users} />
+          <div className="messages">
+            {messages.map((message) => (
+              <MessageView {...message} />
+            ))}
+          </div>
+          <input className="input" />
+          {!isStarted && <button onClick={() => websocket.join()}>join</button>}
+          {gameStatus && isStarted && (
+            <GameField
+              data={gameStatus}
+              onAction={(card, actionCard) => {
+                const myPlayerIndex = gameStatus.players.findIndex(
+                  (player) => currentUser.userName === player.user
+                );
+                if (
+                  myPlayerIndex ===
+                  (gameStatus.currentPlayerIndex + 1) %
+                    gameStatus.players.length
+                ) {
+                  websocket.defend(actionCard, card);
+                } else {
+                  websocket.attack(card);
+                }
+              }}
+              onTurn={() => websocket.turn()}
+              onEpicFail={() => websocket.epicFail()}
+            />
+          )}
+        </>
+      )}
     </div>
   );
 };

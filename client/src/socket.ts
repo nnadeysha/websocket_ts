@@ -1,12 +1,19 @@
-import { ICard, IGameStatus, IServerRequestMessage, IServerResponseMessage, IUser } from "./socketInterface";
+import {
+  ICard,
+  IGameStatus,
+  IServerRequestMessage,
+  IServerResponseMessage,
+  IUser,
+} from './socketInterface';
 
 export class SocketModel {
-  private websocket:WebSocket = null;
-  public onMessage: (text:string) => void;
-  public onUserList: (users:Array<IUser>) => void;
-  public onAuth: (user:IUser) => void;
+  private websocket: WebSocket = null;
+  public onMessage: (text: string) => void;
+  public onUserList: (users: Array<IUser>) => void;
+  public onAuth: (user: IUser) => void;
   public onJoin: () => void;
   public onGameStatus: (gameStatus: IGameStatus) => void;
+  public onFinish: () => void;
 
   constructor() {
     const _websocket = new window.WebSocket('ws://localhost:3000/');
@@ -33,14 +40,20 @@ export class SocketModel {
         this.getUserList();
       }
 
+      if (response.type === 'join') {
+        console.log(response.type);
+        this.onJoin();
+      }
+
       if (response.type === 'game') {
         const gameStatus: IGameStatus = JSON.parse(response.content);
         console.log(gameStatus);
         this.onGameStatus(gameStatus);
       }
 
-      if (response.type === 'join') {
+      if (response.type === 'finish') {
         console.log(response.type);
+        this.onFinish();
       }
     };
 
@@ -48,12 +61,12 @@ export class SocketModel {
     _websocket.onclose = () => {};
   }
   destroy() {
-    if(this.websocket == null) return;
+    if (this.websocket == null) return;
     this.websocket.onclose = null;
     this.websocket.close();
   }
 
-  sendMessage(content:string) {
+  sendMessage(content: string) {
     const request: IServerRequestMessage = {
       type: 'message',
       content: content,
@@ -62,7 +75,7 @@ export class SocketModel {
     this.websocket.send(JSON.stringify(request));
   }
 
-  auth(user:IUser) {
+  auth(user: IUser) {
     const request: IServerRequestMessage = {
       type: 'auth',
       content: JSON.stringify(user),
@@ -89,10 +102,42 @@ export class SocketModel {
     this.websocket.send(JSON.stringify(request));
   }
 
-  attack(card:ICard) {
+  attack(card: ICard) {
     const request: IServerRequestMessage = {
       type: 'attack',
-      content: JSON.stringify(card),
+      content: JSON.stringify({
+        attackCard: card,
+      }),
+    };
+
+    this.websocket.send(JSON.stringify(request));
+  }
+
+  defend(attackCard: ICard, defendCard: ICard) {
+    const request: IServerRequestMessage = {
+      type: 'defend',
+      content: JSON.stringify({
+        attackCard: attackCard,
+        defendCard: defendCard,
+      }),
+    };
+
+    this.websocket.send(JSON.stringify(request));
+  }
+
+  turn() {
+    const request: IServerRequestMessage = {
+      type: 'turn',
+      content: '',
+    };
+
+    this.websocket.send(JSON.stringify(request));
+  }
+
+  epicFail() {
+    const request: IServerRequestMessage = {
+      type: 'epicFail',
+      content: '',
     };
 
     this.websocket.send(JSON.stringify(request));

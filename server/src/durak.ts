@@ -1,4 +1,12 @@
-import { IUser } from "../../client/src/socketInterface";
+import { ICard, IUser } from '../../client/src/socketInterface';
+
+// TODO: class StartGame
+// TODO: class Validation
+// TODO: refactor gameStatus
+// TODO: enum for boolean
+// TODO: кейс for userDisconnect
+// TODO: change naming
+// TODO: rooms for diferent games
 
 export class Durak {
   public isStarted: boolean = false;
@@ -6,17 +14,16 @@ export class Durak {
   public players: Array<Player> = [];
   public currentPlayerIndex: number = 0;
   public trump: number = 0;
-  public cardsInAction: Array<{attack: Card, defend: Card}> = [];
+  public cardsInAction: Array<{ attack: Card; defend: Card }> = [];
   public trumpCard: Card = null;
+  public onFinish: () => void;
 
-  constructor() {
-
-  }
+  constructor() {}
 
   createCards() {
-    let cards:Array<Card> = [];
-    for (let i = 6; i <= 14; i++) {
-      for(let j = 0; j <= 3; j++) {
+    let cards: Array<Card> = [];
+    for (let i = 11; i <= 14; i++) {
+      for (let j = 0; j <= 3; j++) {
         const card = new Card(i, j);
         cards.push(card);
       }
@@ -25,7 +32,7 @@ export class Durak {
     for (let i = cards.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * i);
       const temp = cards[i];
-      cards[i] = cards[j]
+      cards[i] = cards[j];
       cards[j] = temp;
     }
 
@@ -42,56 +49,107 @@ export class Durak {
     this.processCards();
   }
 
-  joinUser(user:IUser) {
-    if(this.isStarted) return;
+  joinUser(user: IUser) {
+    if (this.isStarted) return;
     const player = new Player(user.userName);
     this.players.push(player);
   }
 
   processCards() {
     this.players.forEach((_, index) => {
-      const playerIndex = (this.currentPlayerIndex + index) % this.players.length;
+      const playerIndex =
+        (this.currentPlayerIndex + index) % this.players.length;
       const player = this.players[playerIndex];
-      while(player.cards.length < 6 && this.cards.length) {
+
+      while (player.cards.length < 6 && this.cards.length) {
         player.cards.push(this.cards.pop());
       }
     });
-  }
-  
-  turn() {
-    const isAll = this.cardsInAction.every(action => action.defend != null);
-    if(isAll) {
-      this.cardsInAction = [];
+
+    const winners = this.players.filter((player) => !player.cards.length);
+    console.log(winners);
+
+    if (winners.length === this.players.length - 1) {
+      this.finishGame();
     }
-    this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
+    if (winners.length === this.players.length) {
+      this.finishGame();
+    }
   }
 
-  epicFail() {
-    const looser = this.players[(this.currentPlayerIndex + 1) % this.players.length];
-    this.cardsInAction.forEach(action => {
+  turn(userName: string) {
+    const player = this.getPlayerByName(userName);
+    if (player !== this.getCurrentPlayer()) return;
+
+    const isAll = this.cardsInAction.every((action) => action.defend != null);
+    if (isAll) {
+      this.cardsInAction = [];
+
+      this.currentPlayerIndex =
+        (this.currentPlayerIndex + 1) % this.players.length;
+
+      this.processCards();
+    }
+  }
+
+  epicFail(userName: string) {
+    const looser = this.getDefender();
+
+    const player = this.getPlayerByName(userName);
+    if (player !== looser) return;
+
+    this.cardsInAction.forEach((action) => {
       looser.cards.push(action.attack);
       if (action.defend) {
         looser.cards.push(action.defend);
       }
     });
-    this.currentPlayerIndex = (this.currentPlayerIndex + 2) % this.players.length;
+    this.currentPlayerIndex =
+      (this.currentPlayerIndex + 2) % this.players.length;
+
+    this.cardsInAction = [];
+    this.processCards();
   }
 
   attack(player: Player, card: Card) {
     console.log(player.userName + ' ATTACKED!!!');
-    if(!this.cardsInAction.length) {
-      if(player === this.players[this.currentPlayerIndex]) {
-        player.cards =  player.cards.filter(playerCard => !playerCard.isEqual(card));
-        this.cardsInAction.push({attack: card, defend: null});
+    if (!this.cardsInAction.length) {
+      if (player === this.getCurrentPlayer()) {
+        player.cards = player.cards.filter(
+          (playerCard) => !playerCard.isEqual(card)
+        );
+        this.cardsInAction.push({ attack: card, defend: null });
+      }
+    } else {
+      const isFound = !!this.cardsInAction.find(
+        (action) =>
+          card.value === action.attack.value ||
+          card.value === action.defend?.value
+      );
+
+      if (isFound) {
+        if (player !== this.getDefender()) {
+          player.cards = player.cards.filter(
+            (playerCard) => !playerCard.isEqual(card)
+          );
+          this.cardsInAction.push({ attack: card, defend: null });
+        }
       }
     }
   }
 
   defend(player: Player, card: Card, attackCard: Card) {
-    if(player === (this.players[(this.currentPlayerIndex + 1) % this.players.length])) {
-      if(card.compare(attackCard, this.trump)) {
-        player.cards =  player.cards.filter(playerCard => !playerCard.isEqual(card));
-        const currentAction = this.cardsInAction.find(action => action.attack === attackCard);
+    console.log('entery');
+    if (player === this.getDefender()) {
+      console.log('2 point');
+      if (card.compare(attackCard, this.trump)) {
+        console.log('3 point');
+        player.cards = player.cards.filter(
+          (playerCard) => !playerCard.isEqual(card)
+        );
+        const currentAction = this.cardsInAction.find(
+          (action) => action.attack === attackCard
+        );
         currentAction.defend = card;
       }
     }
@@ -99,6 +157,26 @@ export class Durak {
 
   getPlayers() {
     return this.players.length;
+  }
+
+  getDefender() {
+    return this.players[(this.currentPlayerIndex + 1) % this.players.length];
+  }
+
+  getCurrentPlayer() {
+    return this.players[this.currentPlayerIndex];
+  }
+
+  getPlayerByName(name: string) {
+    return this.players.find((player) => {
+      return player.userName === name;
+    });
+  }
+
+  finishGame() {
+    this.players = [];
+    this.isStarted = false;
+    this.onFinish();
   }
 }
 
@@ -119,11 +197,22 @@ class Card {
     this.value = value;
     this.suit = suit;
   }
+
   compare(attackCard: Card, trump: number) {
     //shitlogic need trump <>
-    return attackCard.value < this.value;
+    console.log('dsdsdsdsss');
+    if (attackCard.suit != this.suit && this.suit != trump) return false;
+
+    const totalAttackValue =
+      attackCard.value + (attackCard.suit == trump ? 14 : 0);
+
+    const totalDefendValue = this.value + (this.suit == trump ? 14 : 0);
+
+    console.log('22', totalDefendValue, totalAttackValue);
+    return totalAttackValue < totalDefendValue;
   }
-  isEqual(card: Card) {
+
+  isEqual(card: ICard) {
     return this.value === card.value && this.suit === card.suit;
   }
 }
