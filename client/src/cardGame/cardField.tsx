@@ -102,17 +102,11 @@ export const Actions = ({
         return (
           <div>
             <div onClick={() => onSelect(action.attack)}>
-              {'attack: ' +
-                action.attack.value.toString() +
-                ' ' +
-                action.attack.suit.toString()}
+              {`attack: ${action.attack.value.toString()} ${action.attack.suit.toString()}`}
             </div>
             {action.defend && (
               <div>
-                {'defend: ' +
-                  action.defend.value.toString() +
-                  ' ' +
-                  action.defend.suit.toString()}
+                {`defend: ${action.defend.value.toString()} ${action.defend.suit.toString()}`}
               </div>
             )}
           </div>
