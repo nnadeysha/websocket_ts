@@ -111,29 +111,25 @@ export class Durak {
     this.processCards();
   }
 
+  pickCard(player: Player, card: Card) {
+    player.cards = player.cards.filter(
+      (playerCard) => !playerCard.isEqual(card)
+    );
+    this.cardsInAction.push({ attack: card, defend: null });
+  }
+
   attack(player: Player, card: Card) {
-    console.log(player.userName + ' ATTACKED!!!');
-    if (!this.cardsInAction.length) {
-      if (player === this.getCurrentPlayer()) {
-        player.cards = player.cards.filter(
-          (playerCard) => !playerCard.isEqual(card)
-        );
-        this.cardsInAction.push({ attack: card, defend: null });
-      }
+    console.log(player.userName + ' ON ATTACK!!!');
+    if (!this.cardsInAction.length && player === this.getCurrentPlayer()) {
+      this.pickCard(player, card);
     } else {
       const isFound = !!this.cardsInAction.find(
         (action) =>
           card.value === action.attack.value ||
           card.value === action.defend?.value
       );
-
-      if (isFound) {
-        if (player !== this.getDefender()) {
-          player.cards = player.cards.filter(
-            (playerCard) => !playerCard.isEqual(card)
-          );
-          this.cardsInAction.push({ attack: card, defend: null });
-        }
+      if (isFound && player !== this.getDefender()) {
+        this.pickCard(player, card);
       }
     }
   }
@@ -153,6 +149,10 @@ export class Durak {
         currentAction.defend = card;
       }
     }
+  }
+
+  insertPlayerCard() {
+    
   }
 
   getPlayers() {
@@ -199,20 +199,16 @@ class Card {
   }
 
   compare(attackCard: Card, trump: number) {
-    //shitlogic need trump <>
-    console.log('dsdsdsdsss');
     if (attackCard.suit != this.suit && this.suit != trump) return false;
-
-    const totalAttackValue =
-      attackCard.value + (attackCard.suit == trump ? 14 : 0);
-
-    const totalDefendValue = this.value + (this.suit == trump ? 14 : 0);
-
-    console.log('22', totalDefendValue, totalAttackValue);
-    return totalAttackValue < totalDefendValue;
+    console.log(attackCard.getTotal(trump) + ' ON ' + this.getTotal(trump));
+    return attackCard.getTotal(trump) < this.getTotal(trump);
   }
 
   isEqual(card: ICard) {
     return this.value === card.value && this.suit === card.suit;
+  }
+
+  getTotal(trump:number) {
+    return this.value + (this.suit == trump ? 14 : 0);
   }
 }

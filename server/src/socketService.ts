@@ -175,40 +175,24 @@ export class SocketService {
   }
 
   sendUsers(client: websocket.connection) {
-    const responseMessage: IServerResponseMessage = {
-      type: 'userList',
-      content: JSON.stringify(
-        this.authorisedUsers.map((user) => ({
-          userName: user.userData.userName,
-        }))
-      ),
-    };
+    const userList = this.authorisedUsers.map((user) => ({
+      userName: user.userData.userName,
+    }))
 
-    client.sendUTF(JSON.stringify(responseMessage));
+    this.sendResponse(client, 'userList', JSON.stringify(userList));
   }
 
   sendMessageStatus(client: websocket.connection) {
-    const responseStatus: IServerResponseMessage = {
-      type: 'message-status',
-      content: 'ok',
-    };
-    client.sendUTF(JSON.stringify(responseStatus));
+    this.sendResponse(client, 'message-status', 'ok');
   }
 
   sendMessage(client: websocket.connection, message: string) {
-    const responseMessage: IServerResponseMessage = {
-      type: 'message',
-      content: message,
-    };
-    client.sendUTF(JSON.stringify(responseMessage));
+    this.sendResponse(client, 'message', message);
   }
 
   sendAuth(client: websocket.connection, user: IUser) {
-    const responseAuth: IServerResponseMessage = {
-      type: 'auth',
-      content: JSON.stringify(user),
-    };
-    client.sendUTF(JSON.stringify(responseAuth));
+
+    this.sendResponse(client, 'auth', JSON.stringify(user));
   }
 
   sendGameStatus(client: websocket.connection, game: Durak) {
@@ -239,26 +223,22 @@ export class SocketService {
       }),
       currentPlayerIndex: game.currentPlayerIndex,
     };
-    const responseGame: IServerResponseMessage = {
-      type: 'game',
-      content: JSON.stringify(gameStatus),
-    };
 
-    client.sendUTF(JSON.stringify(responseGame));
+    this.sendResponse(client, 'game', JSON.stringify(gameStatus));
   }
 
   sendFinish(client: websocket.connection, message: string) {
-    const responseMessage: IServerResponseMessage = {
-      type: 'finish',
-      content: message,
-    };
-    client.sendUTF(JSON.stringify(responseMessage));
+    this.sendResponse(client, 'finish', message);
   }
 
   sendJoin(client: websocket.connection) {
+    this.sendResponse(client, 'join', '');
+  }
+
+  sendResponse(client: websocket.connection, type: string, stringContenrt: string) {
     const responseMessage: IServerResponseMessage = {
-      type: 'join',
-      content: '',
+      type: type,
+      content: stringContenrt,
     };
     client.sendUTF(JSON.stringify(responseMessage));
   }

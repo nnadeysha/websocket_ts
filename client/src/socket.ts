@@ -67,77 +67,45 @@ export class SocketModel {
   }
 
   sendMessage(content: string) {
-    const request: IServerRequestMessage = {
-      type: 'message',
-      content: content,
-    };
-
-    this.websocket.send(JSON.stringify(request));
+    this.sendRequest('message', content);
   }
 
   auth(user: IUser) {
-    const request: IServerRequestMessage = {
-      type: 'auth',
-      content: JSON.stringify(user),
-    };
-
-    this.websocket.send(JSON.stringify(request));
+    this.sendRequest('auth', JSON.stringify(user));
   }
 
   getUserList() {
-    const request: IServerRequestMessage = {
-      type: 'userList',
-      content: '',
-    };
-
-    this.websocket.send(JSON.stringify(request));
+    this.sendRequest('userList', '');
   }
 
   join() {
-    const request: IServerRequestMessage = {
-      type: 'join',
-      content: '',
-    };
-
-    this.websocket.send(JSON.stringify(request));
+    this.sendRequest('join', '');
   }
 
   attack(card: ICard) {
-    const request: IServerRequestMessage = {
-      type: 'attack',
-      content: JSON.stringify({
-        attackCard: card,
-      }),
-    };
-
-    this.websocket.send(JSON.stringify(request));
+    this.sendRequest('attack', JSON.stringify({attackCard: card}));
   }
 
   defend(attackCard: ICard, defendCard: ICard) {
-    const request: IServerRequestMessage = {
-      type: 'defend',
-      content: JSON.stringify({
-        attackCard: attackCard,
-        defendCard: defendCard,
-      }),
-    };
-
-    this.websocket.send(JSON.stringify(request));
+    const content = {
+      attackCard: attackCard,
+      defendCard: defendCard,
+    }
+    this.sendRequest('defend', JSON.stringify(content));
   }
 
   turn() {
-    const request: IServerRequestMessage = {
-      type: 'turn',
-      content: '',
-    };
-
-    this.websocket.send(JSON.stringify(request));
+    this.sendRequest('turn', '');
   }
 
   epicFail() {
+    this.sendRequest('epicFail', '');
+  }
+
+  sendRequest(type: string, stringContenrt: string) {
     const request: IServerRequestMessage = {
-      type: 'epicFail',
-      content: '',
+      type: type,
+      content: stringContenrt,
     };
 
     this.websocket.send(JSON.stringify(request));

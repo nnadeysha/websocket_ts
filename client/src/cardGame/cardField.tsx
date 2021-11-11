@@ -1,5 +1,5 @@
 import React, { FC, useEffect, useState } from 'react';
-import { ICard, IGameStatus } from '../socketInterface';
+import { ICard, IGameStatus, IPlayer } from '../socketInterface';
 
 export const GameField = ({
   data,
@@ -86,7 +86,7 @@ export const MyCards = ({
 }*/
 
 export const EnemyPlayer = () => {
-  return <div> </div>;
+  return <div></div>;
 };
 
 export const Actions = ({
