@@ -78,8 +78,7 @@ export const SocketApp = () => {
                 );
                 if (
                   myPlayerIndex ===
-                  (gameStatus.currentPlayerIndex + 1) %
-                  gameStatus.players.length
+                  gameStatus.currentDefenderIndex
                 ) {
                   websocket.defend(actionCard, card);
                 } else {
