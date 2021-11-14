@@ -5,19 +5,23 @@ import {IGameStatus} from "./socketServerInterface";
 export class BotController extends PlayerController {
   constructor(game: Durak, userName: string) {
     super(game, userName, () => {
-      const gameStatus = game.getGameStatus(userName)
+      const gameStatus = game.getGameStatus(userName);
       const myPlayerIndex = gameStatus.players.findIndex(
         (player) => userName === player.user
       );
       if (
         myPlayerIndex ===
-        (gameStatus.currentPlayerIndex + 1) %
-        gameStatus.players.length
+        gameStatus.currentDefenderIndex
       ) {
-        this.defendLogic(gameStatus)
+        setTimeout(() => {
+          this.defendLogic(gameStatus)
+        }, 1000);
         //websocket.defend(actionCard, card);
-      } else {
-        this.attackLogic(gameStatus)
+      } else if(myPlayerIndex === gameStatus.currentPlayerIndex) {
+        setTimeout(() => {
+          this.attackLogic(gameStatus)
+        }, 1000);
+        
         //websocket.attack(card);
       }
     });
@@ -30,8 +34,8 @@ export class BotController extends PlayerController {
         const isDefended = !!gameStatus.playerCards.find(_card => {
           const card = new Card(_card.value, _card.suit)
           const attackCard = new Card(action.attack.value, action.attack.suit)
-          console.log(gameStatus)
-          console.log(card,attackCard)
+          //console.log(gameStatus)
+          //console.log(card,attackCard)
           const isCorrect = card.compare(attackCard, gameStatus.trumpCard.suit, 14)
           if (isCorrect) {
             this.defend(card, attackCard)
@@ -54,6 +58,7 @@ export class BotController extends PlayerController {
       this.attack(gameStatus.playerCards[0])
     } else {
       if (!isNotDefended) {
+        console.log('TURN')
         this.turn()
       }
     }

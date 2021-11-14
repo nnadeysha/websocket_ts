@@ -27,6 +27,7 @@ export interface IGameStatus {
     playerCards: Array<ICard>;
     actionCards: Array<{ attack: ICard; defend: ICard }>;
     currentPlayerIndex: number;
+    currentDefenderIndex: number;
 }
 
 export interface IPlayer {
@@ -47,3 +48,4 @@ export interface IDefendParams {
 export interface IAttackParams {
     attackCard: ICard;
 }
+
