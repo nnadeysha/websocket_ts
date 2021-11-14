@@ -99,7 +99,7 @@ export class Durak {
     if (isAll) {
       this.cardsInAction = [];
       this.processCards();
-      this.currentPlayerIndex = this.getNextPlayer(1);
+      this.currentPlayerIndex = this.getNextPlayer(this.currentPlayerIndex,1);
       /* (this.currentPlayerIndex + 1) % this.players.length; */
     }
     this.sendGameStatus();
@@ -122,7 +122,7 @@ export class Durak {
 
     this.cardsInAction = [];
     this.processCards();
-    this.currentPlayerIndex = this.getNextPlayer(2);
+    this.currentPlayerIndex = this.getNextPlayer(this.getNextPlayer(this.currentPlayerIndex, 1), 1);
     this.sendGameStatus();
   }
 
@@ -193,7 +193,7 @@ export class Durak {
         };
       }),
       currentPlayerIndex: this.currentPlayerIndex,
-      currentDefenderIndex: this.getNextPlayer(1),
+      currentDefenderIndex: this.getNextPlayer(this.currentPlayerIndex,1),
     };
     return gameStatus;
   }
@@ -205,8 +205,8 @@ export class Durak {
   }
 
   getDefender() {
-    console.log(this.getNextPlayer(1));
-    return this.players[this.getNextPlayer(1)];
+    console.log(this.getNextPlayer(this.currentPlayerIndex,1));
+    return this.players[this.getNextPlayer(this.currentPlayerIndex,1)];
   }
 
   getCurrentPlayer() {
@@ -242,13 +242,15 @@ export class Durak {
 
     return player.isActive;
   }
-  getNextPlayer(offset: number) {
+  getNextPlayer(currentPlayerIndex: number, offset: number ) {
     let nextPlayerIndex: number = -1;
     this.players.find((_, index) => {
       const playerIndex =
-        (this.currentPlayerIndex + index + offset) % this.players.length;
+        (currentPlayerIndex + index + offset) % this.players.length;
       const player = this.players[playerIndex];
+      
       if (
+        
         /* this.currentPlayerIndex !== playerIndex && */
         this.isActivePlayer(player)
       ) {
